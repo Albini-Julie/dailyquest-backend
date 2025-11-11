@@ -67,6 +67,7 @@ describe('Auth API', () => {
   describe('POST /api/auth/login', () => {
     // Crée l’utilisateur avant chaque test de login
     beforeEach(async () => {
+      await User.deleteMany({});
       await request(app).post('/api/auth/register').send({
         username: 'Julie',
         email: 'julie@test.com',
