@@ -9,7 +9,7 @@
   "scripts": {
     "start": "node index.js",
     "dev": "nodemon index.js",
-    "test": "jest --detectOpenHandles --forceExit"
+    "test": "jest --runInBand"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -23,6 +23,7 @@
   },
   "devDependencies": {
     "jest": "^29.7.0",
+    "mongodb-memory-server": "^10.3.0",
     "nodemon": "^3.1.10",
     "supertest": "^6.3.4"
   },
