@@ -36,6 +36,6 @@ jobs:
 
       - name: Run tests
         env:
-          MONGO_URI: mongodb://mongo:27017/testdb
+          MONGO_URI: mongodb://mongo:5000/testdb
           NODE_ENV: test
         run: npm test
