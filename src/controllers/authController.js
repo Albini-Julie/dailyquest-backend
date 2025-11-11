@@ -14,7 +14,7 @@ exports.register = async (req, res) => {
   try {
     const { username, email, password } = req.body;
 
-    // Validation simple
+    // Validation côté controller
     if (!username || !email || !password) {
       return res.status(400).json({ error: 'Tous les champs sont requis' });
     }
@@ -24,17 +24,18 @@ exports.register = async (req, res) => {
       return res.status(400).json({ error: 'Email invalide' });
     }
 
-    if (password.length < 6) {
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$/;
+    if (!passwordRegex.test(password)) {
       return res.status(400).json({ error: 'Mot de passe trop faible' });
     }
 
-    // Vérifie si l'utilisateur existe déjà
+    // Vérifie si l’utilisateur existe
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: 'Email déjà utilisé' });
     }
 
-    // Hash du mot de passe
+    // Hash seulement **après validation**
     const hashedPassword = await bcrypt.hash(password, 10);
 
     const user = await User.create({
@@ -49,6 +50,7 @@ exports.register = async (req, res) => {
     res.status(500).json({ error: 'Erreur serveur lors de l’inscription' });
   }
 };
+
 
 // Connexion
 exports.login = async (req, res) => {
