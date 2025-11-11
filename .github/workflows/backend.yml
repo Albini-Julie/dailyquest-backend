@@ -12,26 +12,28 @@ jobs:
 
     services:
       mongo:
-        image: mongo:latest
+        image: mongo:6.0
         ports:
           - 27017:27017
         options: >-
-          --health-cmd "mongosh --eval 'db.runCommand({ ping: 1 })'"
-          --health-interval=10s
-          --health-timeout=5s
-          --health-retries=5
+          --bind_ip_all
+          --quiet
 
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
+      - uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      - name: Install dependencies
-        run: npm ci
+      - run: npm ci
+
+      - name: Wait for MongoDB
+        run: |
+          until mongosh --host localhost --eval "db.adminCommand('ping')" >/dev/null 2>&1; do
+            echo "Waiting for MongoDB..."
+            sleep 2
+          done
 
       - name: Run tests
         env:
