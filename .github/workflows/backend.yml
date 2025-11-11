@@ -31,9 +31,9 @@ jobs:
           node-version: 20
 
       - name: Install dependencies
-        working-directory: dailyquest-backend
         run: npm ci
+        working-directory: ./
 
       - name: Run tests
-        working-directory: dailyquest-backend
         run: npm test
+        working-directory: ./
