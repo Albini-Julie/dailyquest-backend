@@ -16,7 +16,6 @@ jobs:
         ports:
           - 27017:27017
         options: >-
-          --bind_ip_all
           --quiet
 
     steps:
