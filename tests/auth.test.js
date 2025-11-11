@@ -1,5 +1,5 @@
 const request = require('supertest');
-const app = require('../index');
+const app = require('../src/server');
 
 describe('Auth routes', () => {
   it('devrait renvoyer 400 si les champs sont manquants', async () => {
