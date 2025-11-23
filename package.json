@@ -2,13 +2,13 @@
   "name": "dailyquest-backend",
   "version": "0.0.1",
   "description": "Backend de l'application Daily Quest - Quêtes quotidiennes gamifiées",
-  "main": "src/server.js",
+  "main": "src/server.ts",
   "author": "",
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js",
+    "start": "node src/server.ts",
+    "dev": "nodemon src/server.ts",
     "test": "jest --runInBand"
   },
   "dependencies": {
@@ -22,15 +22,12 @@
     "multer": "^1.4.5-lts.1"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "jest": "^29.7.0",
     "mongodb-memory-server": "^10.3.0",
     "nodemon": "^3.1.10",
-    "supertest": "^6.3.4"
-  },
-  "jest": {
-    "testEnvironment": "node",
-    "coveragePathIgnorePatterns": [
-      "/node_modules/"
-    ]
+    "supertest": "^6.3.4",
+    "ts-jest": "^29.4.5",
+    "ts-node": "^10.9.2"
   }
 }
