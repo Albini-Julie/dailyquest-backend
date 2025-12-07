@@ -26,16 +26,20 @@ router.get('/today', authMiddleware, async (req: any, res) => {
     let todaysQuests = await UserQuestModel.find({
       user: userId,
       startDate: { $gte: start, $lte: end }
-    });
+    })
 
     if (todaysQuests.length < 3) {
       const needed = 3 - todaysQuests.length;
 
       // Sélectionner quêtes aléatoires
-      const randomQuests = await QuestModel.aggregate([
-        { $match: { isActive: true } },
-        { $sample: { size: needed } },
-      ]);
+      const count = await QuestModel.countDocuments({ isActive: true });
+      const randomIndexes = Array.from({ length: needed }, () => Math.floor(Math.random() * count));
+
+      const randomQuests: any[] = [];
+      for (const i of randomIndexes) {
+        const quest = await QuestModel.findOne({ isActive: true }).skip(i);
+        if (quest) randomQuests.push(quest);
+      }
 
       const createdQuests = await Promise.all(
         randomQuests.map(q =>
@@ -45,6 +49,7 @@ router.get('/today', authMiddleware, async (req: any, res) => {
             questTitle: q.title,
             questDescription: q.description,
             questPoints: q.points,
+            startDate: new Date(),
           })
         )
       );

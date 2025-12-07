@@ -52,7 +52,7 @@ export const submitProof = async (req: Request, res: Response) => {
 // Récupérer toutes les quêtes d’un utilisateur
 export const getUserQuests = async (req: Request, res: Response) => {
   try {
-    const userQuests = await UserQuestModel.find({ user: req.user._id }).populate('quest');
+    const userQuests = await UserQuestModel.find({ user: req.user._id });
     res.json(userQuests);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
@@ -62,7 +62,7 @@ export const getUserQuests = async (req: Request, res: Response) => {
 // Récupérer toutes les quêtes validées
 export const getValidatedQuests = async (_req: Request, res: Response) => {
   try {
-    const validatedQuests = await UserQuestModel.find({ status: 'validated' }).populate('quest user');
+    const validatedQuests = await UserQuestModel.find({ status: 'validated' });
     res.json(validatedQuests);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
