@@ -6,8 +6,58 @@ import {
   getValidatedQuests,
 } from '../controllers/UserQuestController';
 import { authMiddleware } from '../middlewares/authMiddleware'; // Middleware pour vérifier JWT
+import { UserQuestModel } from '../models/UserQuest';
+import { QuestModel } from '../models/Quest';
 
 const router = Router();
+
+router.get('/today', authMiddleware, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+
+    // Définir la plage de dates du jour
+    const start = new Date();
+    start.setHours(0, 0, 0, 0);
+
+    const end = new Date();
+    end.setHours(23, 59, 59, 999);
+
+    // Vérifie si l'utilisateur a déjà 3 quêtes pour aujourd'hui
+    let todaysQuests = await UserQuestModel.find({
+      user: userId,
+      startDate: { $gte: start, $lte: end }
+    });
+
+    if (todaysQuests.length < 3) {
+      const needed = 3 - todaysQuests.length;
+
+      // Sélectionner quêtes aléatoires
+      const randomQuests = await QuestModel.aggregate([
+        { $match: { isActive: true } },
+        { $sample: { size: needed } },
+      ]);
+
+      const createdQuests = await Promise.all(
+        randomQuests.map(q =>
+          UserQuestModel.create({
+            user: userId,
+            quest: q._id,
+            questTitle: q.title,
+            questDescription: q.description,
+            questPoints: q.points,
+          })
+        )
+      );
+
+      todaysQuests = [...todaysQuests, ...createdQuests];
+    }
+
+    res.json(todaysQuests);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Impossible de récupérer les quêtes du jour." });
+  }
+});
 
 // Accepter une quête
 router.post('/accept', authMiddleware, acceptQuest);

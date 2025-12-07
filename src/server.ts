@@ -7,6 +7,7 @@ import authRoutes from './routes/auth';
 import userQuestRoutes from './routes/userQuest';
 import validationRoutes from './routes/validation';
 import communityRoutes from './routes/community';
+import questsRoutes from './routes/quest';
 
 dotenv.config();
 
@@ -17,9 +18,10 @@ app.use(cors());
 
 // Routes
 app.use('/api/auth', authRoutes);
-app.use('/api/quests', userQuestRoutes);
+app.use('/api/userquests', userQuestRoutes);
 app.use('/api/validation', validationRoutes);
 app.use('/api/community', communityRoutes);
+app.use('/api/quests', questsRoutes);
 
 // Connexion Mongo et lancement serveur
 if (process.env.NODE_ENV !== 'test') {
