@@ -128,8 +128,29 @@ router.post('/:id/change', authMiddleware, async (req: any, res) => {
   }
 });
 
-// Accepter une quête
-router.post('/accept', authMiddleware, acceptQuest);
+// Lancer une quête
+router.post('/:id/start', authMiddleware, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const userQuestId = req.params.id;
+
+    const uq = await UserQuestModel.findById(userQuestId);
+    if (!uq) return res.status(404).json({ error: 'UserQuest not found' });
+    if (!uq.user.equals(userId)) return res.status(403).json({ error: 'Not authorized' });
+
+    if (uq.status !== 'initial') 
+      return res.status(400).json({ error: 'Quest cannot be started' });
+
+    uq.status = 'in_progress';
+    uq.startDate = new Date();
+    await uq.save();
+
+    res.json(uq);
+  } catch (err: any) {
+    console.error(err);
+    res.status(500).json({ error: err.message });
+  }
+});
 
 // Soumettre preuve
 router.put('/submit/:userQuestId', authMiddleware, submitProof);
