@@ -9,6 +9,9 @@ import { authMiddleware } from '../middlewares/authMiddleware'; // Middleware po
 import { upload } from '../middlewares/stockageMiddleware'; // Middleware pour le stockage
 import { UserQuestModel } from '../models/UserQuest';
 import { QuestModel } from '../models/Quest';
+import fs from 'fs';
+import path from 'path';
+
 
 const router = Router();
 router.get('/today', authMiddleware, async (req: any, res) => {
@@ -25,14 +28,23 @@ router.get('/today', authMiddleware, async (req: any, res) => {
     // Récupérer toutes les quêtes existantes pour cet utilisateur
     const allUserQuests = await UserQuestModel.find({ user: userId });
 
-    // Supprimer les quêtes qui ne sont pas du jour
+    // Supprimer les quêtes qui ne sont pas du jour et dont le statut n'est pas submitted
     await Promise.all(
       allUserQuests.map(async (uq) => {
-        if (uq.startDate < start || uq.startDate > end) {
-          await uq.deleteOne();
+      if ((uq.startDate < start || uq.startDate > end) && uq.status !== 'submitted') {
+
+        // Supprimer le fichier proofImage si existant
+        if (uq.proofImage) {
+          const filePath = path.join(__dirname, '..', uq.proofImage);
+          fs.unlink(filePath, (err) => {
+            if (err) console.error('Erreur suppression fichier:', err);
+          });
         }
-      })
-    );
+
+        await uq.deleteOne();
+      }
+    })
+);
 
         // Vérifie si l'utilisateur a déjà 3 quêtes pour aujourd'hui
     let todaysQuests = await UserQuestModel.find({
