@@ -31,14 +31,14 @@ export const acceptQuest = async (req: Request, res: Response) => {
 export const submitProof = async (req: Request, res: Response) => {
   try {
     const { userQuestId } = req.params;
-    const { proofImage } = req.body;
-
     const userQuest = await UserQuestModel.findById(userQuestId);
     if (!userQuest) return res.status(404).json({ error: 'UserQuest not found' });
     if (!userQuest.user.equals(req.user._id)) return res.status(403).json({ error: 'Not authorized' });
     if (userQuest.status !== 'in_progress') return res.status(400).json({ error: 'Quest not in progress' });
 
-    userQuest.proofImage = proofImage;
+    if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
+
+    userQuest.proofImage = `/uploads/${req.file.filename}`; // chemin relatif
     userQuest.status = 'submitted';
     userQuest.endDate = new Date();
 

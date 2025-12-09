@@ -6,6 +6,7 @@ import {
   getValidatedQuests,
 } from '../controllers/UserQuestController';
 import { authMiddleware } from '../middlewares/authMiddleware'; // Middleware pour vérifier JWT
+import { upload } from '../middlewares/stockageMiddleware'; // Middleware pour le stockage
 import { UserQuestModel } from '../models/UserQuest';
 import { QuestModel } from '../models/Quest';
 
@@ -165,7 +166,7 @@ router.post('/:id/start', authMiddleware, async (req: any, res) => {
 });
 
 // Soumettre preuve
-router.put('/submit/:userQuestId', authMiddleware, submitProof);
+router.put('/submit/:userQuestId', authMiddleware, upload.single('proofImage'), submitProof);
 
 // Récupérer toutes les quêtes de l'utilisateur
 router.get('/me', authMiddleware, getUserQuests);
