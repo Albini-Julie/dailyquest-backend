@@ -21,7 +21,19 @@ router.get('/today', authMiddleware, async (req: any, res) => {
     const end = new Date();
     end.setHours(23, 59, 59, 999);
 
-    // Vérifie si l'utilisateur a déjà 3 quêtes pour aujourd'hui
+    // Récupérer toutes les quêtes existantes pour cet utilisateur
+    const allUserQuests = await UserQuestModel.find({ user: userId });
+
+    // Supprimer les quêtes qui ne sont pas du jour
+    await Promise.all(
+      allUserQuests.map(async (uq) => {
+        if (uq.startDate < start || uq.startDate > end) {
+          await uq.deleteOne();
+        }
+      })
+    );
+
+        // Vérifie si l'utilisateur a déjà 3 quêtes pour aujourd'hui
     let todaysQuests = await UserQuestModel.find({
       user: userId,
       startDate: { $gte: start, $lte: end }
