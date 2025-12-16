@@ -17,6 +17,7 @@ router.get('/me', authMiddleware, async (req, res) => {
       username: req.user.username,
       email: req.user.email,
       points: req.user.points,
+      _id: req.user.id
     });
   } catch (err) {
     console.error(err);

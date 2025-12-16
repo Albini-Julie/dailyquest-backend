@@ -16,6 +16,7 @@ export interface IUserQuest extends Document {
   createdAt: Date;
   updatedAt: Date;
   changed: boolean;
+  validatedBy: Types.ObjectId[];
 }
 
 const userQuestSchema = new Schema<IUserQuest>(
@@ -31,6 +32,7 @@ const userQuestSchema = new Schema<IUserQuest>(
     proofImage: { type: String },
     validationCount: { type: Number, default: 0 },
     changed: { type: Boolean, default: false },
+    validatedBy: [{ type: Schema.Types.ObjectId, ref: 'User', default: [] }],
   },
   { timestamps: true }
 );
