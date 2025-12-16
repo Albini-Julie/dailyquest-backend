@@ -3,6 +3,7 @@ import { UserQuestModel, IUserQuest, UserQuestStatus } from '../models/UserQuest
 import { QuestModel } from '../models/Quest';
 import { UserModel } from '../models/User';
 import { Types } from 'mongoose';
+import { io } from '../server';
 
 // Accepter une quête (initial -> in_progress)
 export const acceptQuest = async (req: Request, res: Response) => {
@@ -91,28 +92,27 @@ export const validateUserQuest = async (req: Request, res: Response) => {
     if (uq.status !== 'submitted')
       return res.status(400).json({ error: 'Quest not submitted' });
 
-    // Pas d’auto-validation
     if (uq.user._id.equals(userId))
       return res.status(400).json({ error: 'Cannot validate your own quest' });
 
-    // Pas deux fois
     if (uq.validatedBy.some(id => id.equals(userId)))
       return res.status(400).json({ error: 'Already validated' });
 
-    // Ajouter validation
     uq.validatedBy.push(userId);
     uq.validationCount += 1;
 
-    // Seuil atteint
     if (uq.validationCount >= 5) {
       uq.status = 'validated';
-
       await UserModel.findByIdAndUpdate(uq.user._id, {
         $inc: { points: uq.questPoints }
       });
     }
 
     await uq.save();
+
+    // 🔹 Émettre l’événement temps réel
+    io.emit('questValidated', uq);
+
     res.json(uq);
   } catch (err: any) {
     console.error(err);

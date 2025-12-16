@@ -2,6 +2,8 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
 
 import authRoutes from './routes/auth';
 import userQuestRoutes from './routes/userQuest';
@@ -12,6 +14,20 @@ import questsRoutes from './routes/quest';
 dotenv.config();
 
 const app = express();
+const httpServer = createServer(app);
+
+// Socket.IO
+export const io = new Server(httpServer, {
+  cors: { origin: '*' },
+});
+
+io.on('connection', (socket) => {
+  //console.log('Un utilisateur est connecté:', socket.id);
+
+  socket.on('disconnect', () => {
+    //console.log('Utilisateur déconnecté:', socket.id);
+  });
+});
 
 app.use(express.json());
 app.use(cors());
@@ -28,7 +44,9 @@ if (process.env.NODE_ENV !== 'test') {
   const PORT = process.env.PORT || 5000;
   mongoose
     .connect(process.env.MONGO_URI || '')
-    .then(() => app.listen(PORT, () => console.log(`Server running on port ${PORT}`)))
+    .then(() =>
+      httpServer.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+    )
     .catch((err) => console.error(err));
 }
 
