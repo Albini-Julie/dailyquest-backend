@@ -5,30 +5,6 @@ import { UserModel } from '../models/User';
 import { Types } from 'mongoose';
 import { io } from '../server';
 
-// Accepter une quête (initial -> in_progress)
-export const acceptQuest = async (req: Request, res: Response) => {
-  try {
-    const { questId } = req.body;
-    const quest = await QuestModel.findById(questId);
-    if (!quest) return res.status(404).json({ error: 'Quest not found' });
-
-    const userQuest = await UserQuestModel.create({
-      user: req.user._id,
-      quest: quest._id,
-      questTitle: quest.title,
-      questDescription: quest.description,
-      questPoints: quest.points,
-      status: 'in_progress' as UserQuestStatus,
-      startDate: new Date(),
-      validationCount: 0,
-    });
-
-    res.status(201).json(userQuest);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
 // Soumettre preuve (in_progress -> submitted)
 export const submitProof = async (req: Request, res: Response) => {
   try {
@@ -40,7 +16,7 @@ export const submitProof = async (req: Request, res: Response) => {
 
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
-    userQuest.proofImage = `/uploads/${req.file.filename}`; // chemin relatif
+    userQuest.proofImage = `/uploads/${req.file.filename}`; 
     userQuest.status = 'submitted';
     userQuest.endDate = new Date();
 
@@ -70,7 +46,7 @@ export const getSubmittedQuests = async (req: Request, res: Response) => {
       user: { $ne: userId },
       validatedBy: { $ne: userId }
     })
-    .populate('user', 'username') // optionnel
+    .populate('user', 'username')
     .sort({ updatedAt: -1 });
 
     res.json(quests);
@@ -110,7 +86,6 @@ export const validateUserQuest = async (req: Request, res: Response) => {
 
     await uq.save();
 
-    // 🔹 Émettre l’événement temps réel
     io.emit('questValidated', uq);
 
     res.json(uq);

@@ -101,7 +101,6 @@ export const validateQuest = async (req: Request, res: Response) => {
     await ValidationModel.create({
       userQuest: userQuest._id,
       validator: req.user._id,
-      type: 'like',
     });
 
     // Compter les validations
