@@ -3,6 +3,7 @@ import mongoose from 'mongoose';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import { createServer } from 'http';
+import path from 'path';
 
 import { initIO } from './socket/socket';
 import authRoutes from './modules/module-user/authRoutes';
@@ -14,6 +15,8 @@ dotenv.config();
 
 const app = express();
 const httpServer = createServer(app);
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Middlewares
 app.use(express.json());
