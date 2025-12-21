@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { UserQuestModel } from '../models/UserQuest';
+import { UserQuestModel } from './userQuestModel';
 
 // Soumettre preuve (in_progress -> submitted)
 export const submitProof = async (req: Request, res: Response) => {

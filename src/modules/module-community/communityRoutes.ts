@@ -1,9 +1,9 @@
 import { Router } from 'express';
-import { authMiddleware } from '../middlewares/authMiddleware';
+import { authMiddleware } from '../../middlewares/authMiddleware';
 import {
   getSubmittedQuests,
   validateCommunityQuest
-} from '../controllers/CommunityMessageController';
+} from './communityController';
 
 const router = Router();
 

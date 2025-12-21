@@ -1,5 +1,5 @@
 import { Request, Response } from 'express';
-import { QuestModel } from '../models/Quest';
+import { QuestModel } from './questModel';
 
 // Créer une quête
 export const createQuest = async (req: Request, res: Response) => {

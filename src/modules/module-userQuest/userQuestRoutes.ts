@@ -2,12 +2,12 @@ import { Router } from 'express';
 import {
   submitProof,
   getUserQuests,
-} from '../controllers/UserQuestController';
-import {  getSubmittedQuests, validateCommunityQuest } from '../controllers/CommunityMessageController';
-import { authMiddleware } from '../middlewares/authMiddleware'; // Middleware pour vérifier JWT
-import { upload } from '../middlewares/stockageMiddleware'; // Middleware pour le stockage
-import { UserQuestModel } from '../models/UserQuest';
-import { QuestModel } from '../models/Quest';
+} from './userQuestController';
+import {  getSubmittedQuests, validateCommunityQuest } from '../module-community/communityController';
+import { authMiddleware } from '../../middlewares/authMiddleware'; // Middleware pour vérifier JWT
+import { upload } from '../../middlewares/stockageMiddleware'; // Middleware pour le stockage
+import { UserQuestModel } from './userQuestModel';
+import { QuestModel } from '../module-quest/questModel';
 import fs from 'fs';
 import path from 'path';
 

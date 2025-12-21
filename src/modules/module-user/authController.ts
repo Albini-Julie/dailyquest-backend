@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import jwt from 'jsonwebtoken';
-import { UserModel, IUser } from '../models/User';
+import { UserModel, IUser } from './userModel';
 
 const generateToken = (user: IUser) => {
   return jwt.sign(

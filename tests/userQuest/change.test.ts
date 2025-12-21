@@ -2,9 +2,9 @@ import request from 'supertest';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../../src/server';
-import { UserModel } from '../../src/models/User';
-import { UserQuestModel } from '../../src/models/UserQuest';
-import { QuestModel } from '../../src/models/Quest';
+import { UserModel } from '../../src/modules/module-user/userModel';
+import { UserQuestModel } from '../../src/modules/module-userQuest/userQuestModel';
+import { QuestModel } from '../../src/modules/module-quest/questModel';
 import jwt from 'jsonwebtoken';
 
 let mongoServer: MongoMemoryServer;

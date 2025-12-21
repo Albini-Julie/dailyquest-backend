@@ -5,8 +5,8 @@ import {
   getQuestById,
   updateQuest,
   deleteQuest,
-} from '../controllers/questController';
-import { authMiddleware } from '../middlewares/authMiddleware';
+} from './questController';
+import { authMiddleware } from '../../middlewares/authMiddleware';
 
 const router = Router();
 
