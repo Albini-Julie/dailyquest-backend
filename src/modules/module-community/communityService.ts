@@ -1,9 +1,23 @@
+// src/modules/module-community/communityService.ts
 import mongoose from 'mongoose';
 import { UserQuestModel } from '../module-userQuest/userQuestModel';
 import { UserModel } from '../module-user/userModel';
-import { getIO } from '../../socket/socket';
 import { socketService } from '../../socket/socketService';
 
+// Récupérer toutes les quêtes soumises sauf celles de l'utilisateur
+export const getSubmittedQuests = async (userId: string) => {
+  const quests = await UserQuestModel.find({
+    status: 'submitted',
+    user: { $ne: userId },
+    validatedBy: { $ne: userId },
+  })
+    .populate('user', 'username')
+    .sort({ updatedAt: -1 });
+
+  return quests;
+};
+
+// Valider une quête communautaire
 export const validateCommunityQuest = async (userId: string, questId: string) => {
   const uq = await UserQuestModel.findById(questId).populate('user');
   if (!uq) throw new Error('UserQuest not found');
@@ -15,11 +29,10 @@ export const validateCommunityQuest = async (userId: string, questId: string) =>
   uq.validationCount += 1;
 
   let updatedPoints = 0;
+  const VALIDATION_THRESHOLD = 5;
 
-  if (uq.validationCount >= 5) {
+  if (uq.validationCount >= VALIDATION_THRESHOLD) {
     uq.status = 'validated';
-
-    // Mettre à jour les points et récupérer la valeur actuelle
     const updatedUser = await UserModel.findByIdAndUpdate(
       uq.user._id,
       { $inc: { points: uq.questPoints } },
@@ -27,25 +40,18 @@ export const validateCommunityQuest = async (userId: string, questId: string) =>
     );
     updatedPoints = updatedUser?.points || 0;
 
-    // Émettre l'événement pour mettre à jour la cagnotte en temps réel
-console.log('Emit pointsUpdated vers', uq.user._id.toString(), 'points:', updatedPoints);
-
-socketService.emitPointsUpdated({
-  userId: uq.user._id.toString(),
-  points: updatedPoints,
-});
+    socketService.emitPointsUpdated({ userId: uq.user._id.toString(), points: updatedPoints });
   }
 
   await uq.save();
 
-if (!uq._id) throw new Error('_id missing');
-  // Émettre l'événement pour la mise à jour de la quête
-socketService.emitQuestValidated({
-  userQuestId: uq._id.toString(),
-  validationCount: uq.validationCount,
-  status: uq.status,
-  validatedBy: userId,
-});
+  if (!uq._id) throw new Error('_id missing');
+  socketService.emitQuestValidated({
+    userQuestId: uq._id.toString(),
+    validationCount: uq.validationCount,
+    status: uq.status,
+    validatedBy: userId,
+  });
 
   return uq;
 };
