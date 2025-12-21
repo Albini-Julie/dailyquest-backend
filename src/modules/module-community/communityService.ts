@@ -2,6 +2,7 @@ import mongoose from 'mongoose';
 import { UserQuestModel } from '../module-userQuest/userQuestModel';
 import { UserModel } from '../module-user/userModel';
 import { getIO } from '../../socket/socket';
+import { socketService } from '../../socket/socketService';
 
 export const validateCommunityQuest = async (userId: string, questId: string) => {
   const uq = await UserQuestModel.findById(questId).populate('user');
@@ -30,21 +31,22 @@ export const validateCommunityQuest = async (userId: string, questId: string) =>
     // Émettre l'événement pour mettre à jour la cagnotte en temps réel
 console.log('Emit pointsUpdated vers', uq.user._id.toString(), 'points:', updatedPoints);
 
-getIO().emit('pointsUpdated', {
-  userId: uq.user._id.toString(), // convertir ObjectId en string
+socketService.emitPointsUpdated({
+  userId: uq.user._id.toString(),
   points: updatedPoints,
 });
   }
 
   await uq.save();
 
+if (!uq._id) throw new Error('_id missing');
   // Émettre l'événement pour la mise à jour de la quête
-  getIO().emit('questValidated', {
-    userQuestId: uq._id,
-    validationCount: uq.validationCount,
-    status: uq.status,
-    validatedBy: userId,
-  });
+socketService.emitQuestValidated({
+  userQuestId: uq._id.toString(),
+  validationCount: uq.validationCount,
+  status: uq.status,
+  validatedBy: userId,
+});
 
   return uq;
 };

@@ -3,6 +3,7 @@ import { UserQuestModel } from './userQuestModel';
 import { UserModel } from '../module-user/userModel';
 import { getIO } from '../../socket/socket';
 import mongoose from 'mongoose';
+import { socketService } from '../../socket/socketService';
 
 export const getSubmittedQuests = async (userId: string) => {
   const quests = await UserQuestModel.find({
@@ -42,21 +43,23 @@ export const validateCommunityQuest = async (userId: string, questId: string) =>
     updatedPoints = updatedUser?.points || 0;
 
     // Émettre l'événement pointsUpdated
-    getIO().emit('pointsUpdated', {
-      userId: uq.user._id.toString(),
-      points: updatedPoints,
-    });
+socketService.emitPointsUpdated({
+  userId: uq.user._id.toString(),
+  points: updatedPoints,
+});
+
   }
 
   await uq.save();
 
+if (!uq._id) throw new Error('_id missing');
   // Émettre l'événement questValidated
-  getIO().emit('questValidated', {
-    userQuestId: uq._id,
-    validationCount: uq.validationCount,
-    status: uq.status,
-    validatedBy: userId,
-  });
+socketService.emitQuestValidated({
+  userQuestId: uq._id.toString(),
+  validationCount: uq.validationCount,
+  status: uq.status,
+  validatedBy: userId,
+});
 
   return uq;
 };
