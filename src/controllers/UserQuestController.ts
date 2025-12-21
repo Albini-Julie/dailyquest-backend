@@ -1,9 +1,5 @@
 import { Request, Response } from 'express';
-import { UserQuestModel, IUserQuest, UserQuestStatus } from '../models/UserQuest';
-import { QuestModel } from '../models/Quest';
-import { UserModel } from '../models/User';
-import { Types } from 'mongoose';
-import { io } from '../server';
+import { UserQuestModel } from '../models/UserQuest';
 
 // Soumettre preuve (in_progress -> submitted)
 export const submitProof = async (req: Request, res: Response) => {
@@ -33,64 +29,6 @@ export const getUserQuests = async (req: Request, res: Response) => {
     const userQuests = await UserQuestModel.find({ user: req.user._id });
     res.json(userQuests);
   } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// récupérer les quêtes submitted
-export const getSubmittedQuests = async (req: Request, res: Response) => {
-  try {
-    const userId = req.user._id;
-    const quests = await UserQuestModel.find({
-      status: 'submitted',
-      user: { $ne: userId },
-      validatedBy: { $ne: userId }
-    })
-    .populate('user', 'username')
-    .sort({ updatedAt: -1 });
-
-    res.json(quests);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-
-// Valider une quête (submitted -> validated)
-export const validateUserQuest = async (req: Request, res: Response) => {
-  try {
-    const userId = req.user._id;
-    const userQuestId = req.params.id;
-
-    const uq = await UserQuestModel.findById(userQuestId).populate('user');
-    if (!uq) return res.status(404).json({ error: 'UserQuest not found' });
-
-    if (uq.status !== 'submitted')
-      return res.status(400).json({ error: 'Quest not submitted' });
-
-    if (uq.user._id.equals(userId))
-      return res.status(400).json({ error: 'Cannot validate your own quest' });
-
-    if (uq.validatedBy.some(id => id.equals(userId)))
-      return res.status(400).json({ error: 'Already validated' });
-
-    uq.validatedBy.push(userId);
-    uq.validationCount += 1;
-
-    if (uq.validationCount >= 5) {
-      uq.status = 'validated';
-      await UserModel.findByIdAndUpdate(uq.user._id, {
-        $inc: { points: uq.questPoints }
-      });
-    }
-
-    await uq.save();
-
-    io.emit('questValidated', uq);
-
-    res.json(uq);
-  } catch (err: any) {
-    console.error(err);
     res.status(500).json({ error: err.message });
   }
 };

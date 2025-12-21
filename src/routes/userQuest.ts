@@ -2,9 +2,8 @@ import { Router } from 'express';
 import {
   submitProof,
   getUserQuests,
-  getSubmittedQuests,
-  validateUserQuest
 } from '../controllers/UserQuestController';
+import {  getSubmittedQuests, validateCommunityQuest } from '../controllers/CommunityMessageController';
 import { authMiddleware } from '../middlewares/authMiddleware'; // Middleware pour vérifier JWT
 import { upload } from '../middlewares/stockageMiddleware'; // Middleware pour le stockage
 import { UserQuestModel } from '../models/UserQuest';
@@ -187,6 +186,6 @@ router.get('/submitted', authMiddleware, getSubmittedQuests);
 router.get('/me', authMiddleware, getUserQuests);
 
 // valider une quête
-router.post('/:id/validate', authMiddleware, validateUserQuest);
+router.post('/:id/validate', authMiddleware, validateCommunityQuest);
 
 export default router;

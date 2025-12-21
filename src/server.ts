@@ -7,7 +7,6 @@ import { Server } from 'socket.io';
 
 import authRoutes from './routes/auth';
 import userQuestRoutes from './routes/userQuest';
-import validationRoutes from './routes/validation';
 import communityRoutes from './routes/community';
 import questsRoutes from './routes/quest';
 
@@ -22,10 +21,8 @@ export const io = new Server(httpServer, {
 });
 
 io.on('connection', (socket) => {
-  //console.log('Un utilisateur est connecté:', socket.id);
 
   socket.on('disconnect', () => {
-    //console.log('Utilisateur déconnecté:', socket.id);
   });
 });
 
@@ -35,7 +32,6 @@ app.use(cors());
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/userquests', userQuestRoutes);
-app.use('/api/validation', validationRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/quests', questsRoutes);
 

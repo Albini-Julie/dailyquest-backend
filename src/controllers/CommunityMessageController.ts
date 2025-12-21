@@ -1,33 +1,60 @@
 import { Request, Response } from 'express';
-import { CommunityMessageModel } from '../models/CommunityMessage';
 import { UserQuestModel } from '../models/UserQuest';
+import { UserModel } from '../models/User';
+import { io } from '../server';
 
-// Poster preuve dans le chat communautaire
-export const postCommunityMessage = async (req: Request, res: Response) => {
+export const getSubmittedQuests = async (req: Request, res: Response) => {
   try {
-    const { userQuestId, image } = req.body;
-    const userQuest = await UserQuestModel.findById(userQuestId);
-    if (!userQuest) return res.status(404).json({ error: 'UserQuest not found' });
+    const userId = req.user._id;
 
-    const message = await CommunityMessageModel.create({
-      userQuest: userQuest._id,
-      author: req.user._id,
-      image,
+    const quests = await UserQuestModel.find({
+      status: 'submitted',
+      user: { $ne: userId },
+      validatedBy: { $ne: userId }
+    })
+      .populate('user', 'username')
+      .sort({ updatedAt: -1 });
+
+    res.json(quests);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+};
+
+export const validateCommunityQuest = async (req: Request, res: Response) => {
+  try {
+    const userId = req.user._id;
+    const uq = await UserQuestModel.findById(req.params.id).populate('user');
+
+    if (!uq) return res.status(404).json({ error: 'UserQuest not found' });
+    if (uq.status !== 'submitted') return res.status(400).json({ error: 'Quest not submitted' });
+    if (uq.user._id.equals(userId)) return res.status(400).json({ error: 'Cannot validate your own quest' });
+    if (uq.validatedBy.some(id => id.equals(userId))) {
+      return res.status(400).json({ error: 'Already validated' });
+    }
+
+    uq.validatedBy.push(userId);
+    uq.validationCount += 1;
+
+    if (uq.validationCount >= 5) {
+      uq.status = 'validated';
+      await UserModel.findByIdAndUpdate(uq.user._id, {
+        $inc: { points: uq.questPoints }
+      });
+    }
+
+    await uq.save();
+
+    io.emit('questValidated', {
+      userQuestId: uq._id,
+      validationCount: uq.validationCount,
+      status: uq.status,
+      validatedBy: userId,
     });
 
-    res.status(201).json(message);
+    res.json(uq);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }
 };
 
-// Récupérer toutes les preuves d’une UserQuest
-export const getCommunityMessagesByUserQuest = async (req: Request, res: Response) => {
-  try {
-    const { userQuestId } = req.params;
-    const messages = await CommunityMessageModel.find({ userQuest: userQuestId }).populate('author', 'username');
-    res.json(messages);
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-};

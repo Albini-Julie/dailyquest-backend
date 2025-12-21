@@ -1,8 +1,5 @@
 import { Request, Response } from 'express';
-import { QuestModel, IQuest } from '../models/Quest';
-import { UserModel, IUser } from '../models/User';
-import { UserQuestModel } from '../models/UserQuest';
-import { ValidationModel } from '../models/Validation';
+import { QuestModel } from '../models/Quest';
 
 // Créer une quête
 export const createQuest = async (req: Request, res: Response) => {
@@ -73,53 +70,6 @@ export const deleteQuest = async (req: Request, res: Response) => {
 
     await quest.deleteOne();
     res.json({ message: 'Quest deleted' });
-  } catch (err: any) {
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// Valider une quête pour la communauté
-export const validateQuest = async (req: Request, res: Response) => {
-  try {
-    const { userQuestId } = req.params;
-
-    // Trouver la UserQuest
-    const userQuest = await UserQuestModel.findById(userQuestId);
-    if (!userQuest) return res.status(404).json({ error: 'UserQuest not found' });
-
-    // Empêcher un utilisateur de valider deux fois
-    const existingValidation = await ValidationModel.findOne({
-      userQuest: userQuest._id,
-      validator: req.user._id,
-    });
-
-    if (existingValidation) {
-      return res.status(400).json({ error: 'Already validated' });
-    }
-
-    // Créer une validation
-    await ValidationModel.create({
-      userQuest: userQuest._id,
-      validator: req.user._id,
-    });
-
-    // Compter les validations
-    const validationCount = await ValidationModel.countDocuments({ userQuest: userQuest._id });
-    userQuest.validationCount = validationCount;
-
-    // Si validations >= 5, marquer la quête comme validée et ajouter les points
-    if (validationCount >= 5 && userQuest.status !== 'validated') {
-      userQuest.status = 'validated';
-      const creator = await UserModel.findById(userQuest.user);
-      if (creator) {
-        creator.points += userQuest.questPoints;
-        await creator.save();
-      }
-    }
-
-    await userQuest.save();
-
-    res.json(userQuest);
   } catch (err: any) {
     res.status(500).json({ error: err.message });
   }

@@ -5,7 +5,6 @@ import app from '../../src/server';
 import { UserModel } from '../../src/models/User';
 import { UserQuestModel } from '../../src/models/UserQuest';
 import { QuestModel } from '../../src/models/Quest';
-import { ValidationModel } from '../../src/models/Validation';
 import jwt from 'jsonwebtoken';
 
 let mongoServer: MongoMemoryServer;
