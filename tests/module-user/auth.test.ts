@@ -175,3 +175,49 @@ describe('Auth API', () => {
     });
   });
 });
+
+describe('GET /api/auth/me', () => {
+  let token: string;
+
+  beforeEach(async () => {
+    const res = await request(app).post('/api/auth/register').send({
+      username: 'Julie',
+      email: 'julie@test.com',
+      password: 'Password123!',
+    });
+    token = res.body.token;
+  });
+
+  it('should return user info with valid token', async () => {
+    const res = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${token}`);
+
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toHaveProperty('username', 'Julie');
+    expect(res.body).toHaveProperty('email', 'julie@test.com');
+    expect(res.body).toHaveProperty('points');
+    expect(res.body).toHaveProperty('_id');
+  });
+
+  it('should return 401 without token', async () => {
+    const res = await request(app).get('/api/auth/me');
+    expect(res.statusCode).toBe(401);
+  });
+
+  it('should return 401 if user not found', async () => {
+  // Générer un token avec un ID qui n’existe pas
+  const fakeToken = jwt.sign(
+    { id: new mongoose.Types.ObjectId() },
+    process.env.JWT_SECRET || 'testsecret'
+  );
+
+  const res = await request(app)
+    .get('/api/auth/me')
+    .set('Authorization', `Bearer ${fakeToken}`);
+
+  expect(res.statusCode).toBe(401);
+  expect(res.body).toHaveProperty('error', 'User not found');
+});
+
+});
