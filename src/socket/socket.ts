@@ -5,7 +5,7 @@ let ioInstance: Server | null = null;
 
 /**
  * Initialise Socket.IO avec le serveur HTTP
- * @param server HTTP server (createServer(app))
+ * @param server HTTP server
  */
 export const initIO = (server: http.Server) => {
   if (ioInstance) return ioInstance; // éviter double initialisation
@@ -16,19 +16,15 @@ export const initIO = (server: http.Server) => {
   });
 
   ioInstance.on('connection', (socket) => {
-    //console.log('Client WebSocket connecté :', socket.id);
 
     socket.on('disconnect', () => {
-      //console.log('Client WebSocket déconnecté :', socket.id);
     });
   });
 
   return ioInstance;
 };
 
-/**
- * Récupère l'instance Socket.IO
- */
+//Récupère l'instance Socket.IO
 export const getIO = (): Server => {
   if (!ioInstance) throw new Error('Socket.IO non initialisé !');
   return ioInstance;

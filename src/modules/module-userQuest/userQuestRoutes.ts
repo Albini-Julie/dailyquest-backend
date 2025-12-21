@@ -124,7 +124,7 @@ router.post('/:id/change', authMiddleware, async (req: any, res) => {
       { $sample: { size: 1 } }
     ]);
 
-    // Si pas trouvé (p.ex. peu de quêtes dans la base), on peut élargir la recherche en excluant uniquement la quête courante :
+    // Si pas trouvé (p.ex. peu de quêtes dans la base), on peut élargir la recherche en excluant uniquement la quête courante
     let q;
     if (newQuestArr.length === 0) {
       const fallback = await QuestModel.aggregate([

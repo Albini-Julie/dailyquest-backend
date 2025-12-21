@@ -1,4 +1,3 @@
-// src/socket/socketService.ts
 import { getIO } from './socket';
 
 interface QuestValidatedPayload {
@@ -17,7 +16,6 @@ class SocketService {
   emitQuestValidated(payload: QuestValidatedPayload) {
     try {
       getIO().emit('questValidated', payload);
-      console.log('SocketService: questValidated émis', payload);
     } catch (err) {
       console.error('SocketService: impossible d’émettre questValidated', err);
     }
@@ -26,7 +24,6 @@ class SocketService {
   emitPointsUpdated(payload: PointsUpdatedPayload) {
     try {
       getIO().emit('pointsUpdated', payload);
-      console.log('SocketService: pointsUpdated émis', payload);
     } catch (err) {
       console.error('SocketService: impossible d’émettre pointsUpdated', err);
     }

@@ -11,7 +11,6 @@ export const validateCommunityQuest = async (userId: string, questId: string) =>
   if (uq.user._id.equals(userId)) throw new Error('Cannot validate your own quest');
   if (uq.validatedBy.some(id => id.equals(userId))) throw new Error('Already validated');
 
-  // Conversion string -> ObjectId
   uq.validatedBy.push(new mongoose.Types.ObjectId(userId));
   uq.validationCount += 1;
 

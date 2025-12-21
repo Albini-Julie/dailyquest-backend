@@ -1,4 +1,3 @@
-// src/modules/module-community/communityController.ts
 import { Request, Response } from 'express';
 import * as userQuestService from '../module-userQuest/userQuestServices';
 
