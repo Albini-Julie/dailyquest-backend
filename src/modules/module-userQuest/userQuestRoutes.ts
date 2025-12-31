@@ -8,6 +8,7 @@ import { authMiddleware } from '../../middlewares/authMiddleware'; // Middleware
 import { upload } from '../../middlewares/stockageMiddleware'; // Middleware pour le stockage
 import { UserQuestModel } from './userQuestModel';
 import { QuestModel } from '../module-quest/questModel';
+import { UserModel } from '../module-user/userModel';
 import fs from 'fs';
 import path from 'path';
 
@@ -27,40 +28,58 @@ router.get('/today', authMiddleware, async (req: any, res) => {
     // Récupérer toutes les quêtes existantes pour cet utilisateur
     const allUserQuests = await UserQuestModel.find({ user: userId });
 
-    // Supprimer les quêtes qui ne sont pas du jour et dont le statut n'est pas submitted
+    // Compteur local des quêtes ratées
+    let failedCount = 0;
+
+    // Nettoyage des quêtes hors du jour
     await Promise.all(
       allUserQuests.map(async (uq) => {
-      if ((uq.startDate < start || uq.startDate > end) && uq.status !== 'submitted') {
+        const isNotToday = uq.startDate < start || uq.startDate > end;
+        const isFailedStatus = uq.status === 'initial' || uq.status === 'in_progress';
 
-        // Supprimer le fichier proofImage si existant
-        if (uq.proofImage) {
-          const filePath = path.join(__dirname, '..', uq.proofImage);
-          fs.unlink(filePath, (err) => {
-            if (err) console.error('Erreur suppression fichier:', err);
-          });
+        if (isNotToday && uq.status !== 'submitted') {
+
+          // Compter les quêtes ratées
+          if (isFailedStatus) {
+            failedCount++;
+          }
+
+          // Supprimer le fichier de preuve si existant
+          if (uq.proofImage) {
+            const filePath = path.join(__dirname, '..', uq.proofImage);
+            fs.unlink(filePath, (err) => {
+              if (err) console.error('Erreur suppression fichier:', err);
+            });
+          }
+
+          await uq.deleteOne();
         }
+      })
+    );
 
-        await uq.deleteOne();
-      }
-    })
-);
+    // Incrémenter le compteur utilisateur UNE SEULE FOIS
+    if (failedCount > 0) {
+      await UserModel.findByIdAndUpdate(
+        userId,
+        { $inc: { failedQuests: failedCount } }
+      );
+    }
 
-        // Vérifie si l'utilisateur a déjà 3 quêtes pour aujourd'hui
+    // Récupérer les quêtes du jour restantes
     let todaysQuests = await UserQuestModel.find({
       user: userId,
       startDate: { $gte: start, $lte: end }
     });
 
+    // Créer les quêtes manquantes pour atteindre 3
     if (todaysQuests.length < 3) {
       const needed = 3 - todaysQuests.length;
 
-      // Tirer quêtes aléatoires uniques
       const randomQuests = await QuestModel.aggregate([
         { $match: { isActive: true } },
         { $sample: { size: needed } }
       ]);
 
-      // Créer les quêtes du jour restantes
       const createdQuests = await Promise.all(
         randomQuests.map(q =>
           UserQuestModel.create({
@@ -70,7 +89,7 @@ router.get('/today', authMiddleware, async (req: any, res) => {
             questDescription: q.description,
             questPoints: q.points,
             startDate: new Date(),
-            status: "initial"
+            status: 'initial'
           })
         )
       );
@@ -81,9 +100,12 @@ router.get('/today', authMiddleware, async (req: any, res) => {
     res.json(todaysQuests);
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: "Impossible de récupérer les quêtes du jour." });
+    res.status(500).json({
+      error: 'Impossible de récupérer les quêtes du jour.'
+    });
   }
 });
+
 
 router.post('/:id/change', authMiddleware, async (req: any, res) => {
   try {

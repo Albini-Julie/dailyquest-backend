@@ -10,6 +10,8 @@ export interface IUser extends Document {
   comparePassword(password: string): Promise<boolean>;
   createdAt: Date;
   updatedAt: Date;
+  successfulQuests: number;
+  failedQuests: number;
 }
 
 const userSchema = new Schema<IUser>(
@@ -40,6 +42,8 @@ const userSchema = new Schema<IUser>(
     },
     points: { type: Number, default: 0 },
     isAdmin: { type: Boolean, default: false },
+    successfulQuests: { type: Number, default: 0 },
+    failedQuests: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

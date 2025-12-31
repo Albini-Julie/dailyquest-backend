@@ -10,6 +10,7 @@ import authRoutes from './modules/module-user/authRoutes';
 import userQuestRoutes from './modules/module-userQuest/userQuestRoutes';
 import communityRoutes from './modules/module-community/communityRoutes';
 import questsRoutes from './modules/module-quest/questRoutes';
+import userRoutes from './modules/module-user/userRoutes';
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ app.use(cors());
 
 // Routes
 app.use('/api/auth', authRoutes);
+app.use('/api/users', userRoutes);
 app.use('/api/userquests', userQuestRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/quests', questsRoutes);
