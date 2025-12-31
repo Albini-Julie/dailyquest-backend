@@ -28,30 +28,42 @@ export const validateCommunityQuest = async (userId: string, questId: string) =>
   uq.validatedBy.push(new mongoose.Types.ObjectId(userId));
   uq.validationCount += 1;
 
-  let updatedPoints = 0;
   const VALIDATION_THRESHOLD = 5;
+
+  let updatedUser: any = null;
 
   if (uq.validationCount >= VALIDATION_THRESHOLD) {
     uq.status = 'validated';
-    const updatedUser = await UserModel.findByIdAndUpdate(
+
+    updatedUser = await UserModel.findByIdAndUpdate(
       uq.user._id,
-      { $inc: { points: uq.questPoints } },
+      {
+        $inc: {
+          points: uq.questPoints,
+          successfulQuests: 1
+        }
+      },
       { new: true }
     );
-    updatedPoints = updatedUser?.points || 0;
 
-    socketService.emitPointsUpdated({ userId: uq.user._id.toString(), points: updatedPoints });
+    socketService.emitPointsUpdated({
+      userId: uq.user._id.toString(),
+      points: updatedUser?.points || 0
+    });
   }
 
   await uq.save();
 
   if (!uq._id) throw new Error('_id missing');
+
   socketService.emitQuestValidated({
     userQuestId: uq._id.toString(),
     validationCount: uq.validationCount,
     status: uq.status,
     validatedBy: userId,
+    successfulQuests: updatedUser?.successfulQuests
   });
 
   return uq;
 };
+

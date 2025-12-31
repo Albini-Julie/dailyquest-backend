@@ -5,6 +5,7 @@ interface QuestValidatedPayload {
   validationCount: number;
   status: string;
   validatedBy: string;
+  successfulQuests?: number;
 }
 
 interface PointsUpdatedPayload {
