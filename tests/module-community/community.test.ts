@@ -1,8 +1,8 @@
 import { Request, Response } from 'express';
 import { getSubmittedQuests, validateCommunityQuest } from '../../src/modules/module-community/communityController';
-import * as userQuestService from '../../src/modules/module-userQuest/userQuestServices';
+import * as communityService from '../../src/modules/module-community/communityService';
 
-jest.mock('../../src/modules/module-userQuest/userQuestServices');
+jest.mock('../../src/modules/module-community/communityService');
 
 const mockResponse = (): Response => {
   const res: Partial<Response> = {};
@@ -19,9 +19,15 @@ afterEach(() => {
 
 describe('getSubmittedQuests', () => {
   it('should return submitted quests', async () => {
-    (userQuestService.getSubmittedQuests as jest.Mock).mockResolvedValue([
-      { _id: '1', status: 'submitted' },
-    ]);
+    (communityService.getSubmittedQuests as jest.Mock).mockResolvedValue([
+  {
+    _id: '1',
+    status: 'submitted',
+    proofImage: null,
+    toObject: () => ({ _id: '1', status: 'submitted', proofImage: null }),
+  },
+]);
+
 
     const req = {
       user: { _id: mockUserId },
@@ -31,14 +37,19 @@ describe('getSubmittedQuests', () => {
 
     await getSubmittedQuests(req, res);
 
-    expect(userQuestService.getSubmittedQuests).toHaveBeenCalledWith(mockUserId);
+    expect(communityService.getSubmittedQuests).toHaveBeenCalledWith(mockUserId);
     expect(res.json).toHaveBeenCalledWith([
-      { _id: '1', status: 'submitted' },
-    ]);
+  {
+    _id: '1',
+    status: 'submitted',
+    proofImage: null,
+    imageUrl: null,
+  },
+]);
   });
 
   it('should return 500 on error', async () => {
-    (userQuestService.getSubmittedQuests as jest.Mock).mockRejectedValue(
+    (communityService.getSubmittedQuests as jest.Mock).mockRejectedValue(
       new Error('Service error')
     );
 
@@ -57,10 +68,10 @@ describe('getSubmittedQuests', () => {
 
 describe('validateCommunityQuest', () => {
   it('should validate a community quest', async () => {
-    (userQuestService.validateCommunityQuest as jest.Mock).mockResolvedValue({
-      _id: '1',
-      status: 'validated',
-    });
+    (communityService.validateCommunityQuest as jest.Mock).mockResolvedValue({
+  _id: '1',
+  status: 'validated',
+});
 
     const req = {
       user: { _id: mockUserId },
@@ -71,17 +82,17 @@ describe('validateCommunityQuest', () => {
 
     await validateCommunityQuest(req, res);
 
-    expect(userQuestService.validateCommunityQuest).toHaveBeenCalledWith(
-      mockUserId,
-      'questId'
+    expect(communityService.validateCommunityQuest).toHaveBeenCalledWith(
+       mockUserId,
+       'questId'
     );
     expect(res.json).toHaveBeenCalled();
   });
 
   it('should return 400 on error', async () => {
-    (userQuestService.validateCommunityQuest as jest.Mock).mockRejectedValue(
+    (communityService.validateCommunityQuest as jest.Mock).mockRejectedValue(
       new Error('Validation error')
-    );
+  );
 
     const req = {
       user: { _id: mockUserId },

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 import { UserQuestModel } from '../../src/modules/module-userQuest/userQuestModel';
 import { UserModel } from '../../src/modules/module-user/userModel';
 import { socketService } from '../../src/socket/socketService';
-import * as service from '../../src/modules/module-userQuest/userQuestServices';
+import { getSubmittedQuests, validateCommunityQuest } from '../../src/modules/module-community/communityService';
 
 jest.mock('../../src/modules/module-userQuest/userQuestModel');
 jest.mock('../../src/modules/module-user/userModel');
@@ -40,7 +40,7 @@ describe('userQuestServices', () => {
         populate: jest.fn().mockReturnValue({ sort: jest.fn().mockResolvedValue(['quest1', 'quest2']) }),
       });
 
-      const result = await service.getSubmittedQuests(mockUserId);
+      const result = await getSubmittedQuests(mockUserId);
       expect(result).toEqual(['quest1', 'quest2']);
     });
 
@@ -49,7 +49,7 @@ describe('userQuestServices', () => {
         populate: jest.fn().mockReturnValue({ sort: jest.fn().mockResolvedValue([]) }),
       });
 
-      const result = await service.getSubmittedQuests(mockUserId);
+      const result = await getSubmittedQuests(mockUserId);
       expect(result).toEqual([]);
     });
   });
@@ -60,31 +60,31 @@ describe('userQuestServices', () => {
         populate: jest.fn().mockResolvedValue(null),
       });
 
-      await expect(service.validateCommunityQuest(mockUserId, questId))
+      await expect(validateCommunityQuest(mockUserId, questId))
         .rejects.toThrow('UserQuest not found');
     });
 
     it('should throw if quest not submitted', async () => {
       uqMock.status = 'in_progress';
-      await expect(service.validateCommunityQuest(mockUserId, questId))
+      await expect(validateCommunityQuest(mockUserId, questId))
         .rejects.toThrow('Quest not submitted');
     });
 
     it('should throw if validating own quest', async () => {
       uqMock.user._id = new mongoose.Types.ObjectId(mockUserId);
-      await expect(service.validateCommunityQuest(mockUserId, questId))
+      await expect(validateCommunityQuest(mockUserId, questId))
         .rejects.toThrow('Cannot validate your own quest');
     });
 
     it('should throw if already validated', async () => {
       uqMock.validatedBy = [new mongoose.Types.ObjectId(mockUserId)];
-      await expect(service.validateCommunityQuest(mockUserId, questId))
+      await expect(validateCommunityQuest(mockUserId, questId))
         .rejects.toThrow('Already validated');
     });
 
     it('should validate quest and emit events without reaching 5', async () => {
       uqMock.validationCount = 2;
-      const result = await service.validateCommunityQuest(mockUserId, questId);
+      const result = await validateCommunityQuest(mockUserId, questId);
       expect(uqMock.save).toHaveBeenCalled();
       expect(socketService.emitQuestValidated).toHaveBeenCalledWith(expect.objectContaining({
         userQuestId: uqMock._id.toString(),
@@ -97,7 +97,7 @@ describe('userQuestServices', () => {
 
     it('should validate quest and update points if reaching 5', async () => {
       uqMock.validationCount = 4;
-      const result = await service.validateCommunityQuest(mockUserId, questId);
+      const result = await validateCommunityQuest(mockUserId, questId);
       expect(uqMock.status).toBe('validated');
       expect(socketService.emitPointsUpdated).toHaveBeenCalledWith(expect.objectContaining({
         userId: uqMock.user._id.toString(),
@@ -108,7 +108,7 @@ describe('userQuestServices', () => {
 
     it('should throw if _id missing after save', async () => {
       uqMock._id = undefined;
-      await expect(service.validateCommunityQuest(mockUserId, questId))
+      await expect(validateCommunityQuest(mockUserId, questId))
         .rejects.toThrow('_id missing');
     });
   });
