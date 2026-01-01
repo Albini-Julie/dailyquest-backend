@@ -19,7 +19,7 @@ export const getSubmittedQuests = async (userId: string) => {
 
 // Valider une quête communautaire
 export const validateCommunityQuest = async (userId: string, questId: string) => {
-  // 1️⃣ Récupérer la quête utilisateur
+  // Récupérer la quête utilisateur
   const uq = await UserQuestModel.findById(questId);
   if (!uq) throw new Error('UserQuest not found');
   if (uq.status !== 'submitted') throw new Error('Quest not submitted');
@@ -28,13 +28,13 @@ export const validateCommunityQuest = async (userId: string, questId: string) =>
     throw new Error('Already validated');
   }
 
-  // 2️⃣ Récupérer l'utilisateur validateur (lecture seule)
+  // Récupérer l'utilisateur validateur (lecture seule)
   const user = await UserModel.findById(userId).select(
     'dailyValidations lastValidationDate points'
   );
   if (!user) throw new Error('User not found');
 
-  // 3️⃣ Calcul compteur journalier
+  // Calcul compteur journalier
   const now = new Date();
   const sameDay =
     user.lastValidationDate &&
@@ -42,12 +42,12 @@ export const validateCommunityQuest = async (userId: string, questId: string) =>
 
   const dailyCount = sameDay ? user.dailyValidations : 0;
 
-  // 4️⃣ Bloquer à 10
+  // Bloquer à 10
   if (dailyCount >= 10) {
     throw new Error('Daily validation limit reached');
   }
 
-  // 5️⃣ Mise à jour User (atomique)
+  // Mise à jour User (atomique)
   const inc: any = { dailyValidations: 1 };
   if (dailyCount + 1 === 10) {
     inc.points = 1;
@@ -61,7 +61,7 @@ export const validateCommunityQuest = async (userId: string, questId: string) =>
     }
   );
 
-  // 6️⃣ Mise à jour UserQuest
+  // Mise à jour UserQuest
   uq.validatedBy.push(userId as any);
   uq.validationCount += 1;
 
@@ -80,7 +80,7 @@ export const validateCommunityQuest = async (userId: string, questId: string) =>
     { new: true }
   );
 
-  // 🔔 socket pour le PROPRIÉTAIRE de la quête
+  // socket pour le PROPRIÉTAIRE de la quête
   if (updatedOwner) {
     socketService.emitPointsUpdated({
       userId: updatedOwner.id,
@@ -91,7 +91,7 @@ export const validateCommunityQuest = async (userId: string, questId: string) =>
 
   await uq.save();
 
-  // 7️⃣ Sockets (simples, sans typage fragile)
+  // Sockets (simples, sans typage fragile)
   socketService.emitQuestValidated({
     userQuestId: uq.id,
     validationCount: uq.validationCount,
@@ -109,6 +109,7 @@ export const validateCommunityQuest = async (userId: string, questId: string) =>
   return uq;
 };
 
+// Récupérer une quête communautaire aléatoire pour la page d'accueil
 export const getRandomSubmittedQuest = async (userId: string) => {
   return UserQuestModel.findOne({
     status: 'submitted',

@@ -2,6 +2,7 @@ import { Request, Response } from 'express';
 import * as communityService  from './communityService';
 import { UserModel } from '../module-user/userModel';
 
+// Récupérer toutes les quêtes soumises sauf celles de l'utilisateur
 export const getSubmittedQuests = async (req: Request, res: Response) => {
   try {
     const userId = req.user._id;
@@ -28,7 +29,7 @@ export const getSubmittedQuests = async (req: Request, res: Response) => {
     res.status(500).json({ error: err.message });
   }
 };
-
+// Valider une quête communautaire
 export const validateCommunityQuest = async (req: Request, res: Response) => {
   try {
     const userId = req.user._id;
@@ -38,7 +39,7 @@ export const validateCommunityQuest = async (req: Request, res: Response) => {
     res.status(400).json({ error: err.message });
   }
 };
-
+// Récupérer une quête communautaire aléatoire pour la page d'accueil
 export const getHomeQuest = async (req: Request, res: Response) => {
   try {
     const userId = req.user._id;
