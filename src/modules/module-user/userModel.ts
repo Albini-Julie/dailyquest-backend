@@ -12,6 +12,8 @@ export interface IUser extends Document {
   updatedAt: Date;
   successfulQuests: number;
   failedQuests: number;
+  dailyValidations: number;
+  lastValidationDate?: Date;
 }
 
 const userSchema = new Schema<IUser>(
@@ -44,6 +46,8 @@ const userSchema = new Schema<IUser>(
     isAdmin: { type: Boolean, default: false },
     successfulQuests: { type: Number, default: 0 },
     failedQuests: { type: Number, default: 0 },
+    dailyValidations: { type: Number, default: 0 },
+    lastValidationDate: { type: Date },
   },
   { timestamps: true }
 );

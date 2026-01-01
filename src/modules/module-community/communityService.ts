@@ -19,51 +19,99 @@ export const getSubmittedQuests = async (userId: string) => {
 
 // Valider une quête communautaire
 export const validateCommunityQuest = async (userId: string, questId: string) => {
-  const uq = await UserQuestModel.findById(questId).populate('user');
+  // 1️⃣ Récupérer la quête utilisateur
+  const uq = await UserQuestModel.findById(questId);
   if (!uq) throw new Error('UserQuest not found');
   if (uq.status !== 'submitted') throw new Error('Quest not submitted');
-  if (uq.user._id.equals(userId)) throw new Error('Cannot validate your own quest');
-  if (uq.validatedBy.some(id => id.equals(userId))) throw new Error('Already validated');
+  if (uq.user.toString() === userId) throw new Error('Cannot validate your own quest');
+  if (uq.validatedBy.some(id => id.toString() === userId)) {
+    throw new Error('Already validated');
+  }
 
-  uq.validatedBy.push(new mongoose.Types.ObjectId(userId));
+  // 2️⃣ Récupérer l'utilisateur validateur (lecture seule)
+  const user = await UserModel.findById(userId).select(
+    'dailyValidations lastValidationDate points'
+  );
+  if (!user) throw new Error('User not found');
+
+  // 3️⃣ Calcul compteur journalier
+  const now = new Date();
+  const sameDay =
+    user.lastValidationDate &&
+    user.lastValidationDate.toDateString() === now.toDateString();
+
+  const dailyCount = sameDay ? user.dailyValidations : 0;
+
+  // 4️⃣ Bloquer à 10
+  if (dailyCount >= 10) {
+    throw new Error('Daily validation limit reached');
+  }
+
+  // 5️⃣ Mise à jour User (atomique)
+  const inc: any = { dailyValidations: 1 };
+  if (dailyCount + 1 === 10) {
+    inc.points = 1;
+  }
+
+  await UserModel.updateOne(
+    { _id: userId },
+    {
+      $set: { lastValidationDate: now },
+      $inc: inc,
+    }
+  );
+
+  // 6️⃣ Mise à jour UserQuest
+  uq.validatedBy.push(userId as any);
   uq.validationCount += 1;
 
   const VALIDATION_THRESHOLD = 5;
-
-  let updatedUser: any = null;
-
   if (uq.validationCount >= VALIDATION_THRESHOLD) {
-    uq.status = 'validated';
+  uq.status = 'validated';
 
-    updatedUser = await UserModel.findByIdAndUpdate(
-      uq.user._id,
-      {
-        $inc: {
-          points: uq.questPoints,
-          successfulQuests: 1
-        }
+  const updatedOwner = await UserModel.findByIdAndUpdate(
+    uq.user,
+    {
+      $inc: {
+        points: uq.questPoints,
+        successfulQuests: 1,
       },
-      { new: true }
-    );
+    },
+    { new: true }
+  );
 
+  // 🔔 socket pour le PROPRIÉTAIRE de la quête
+  if (updatedOwner) {
     socketService.emitPointsUpdated({
-      userId: uq.user._id.toString(),
-      points: updatedUser?.points || 0
+      userId: updatedOwner.id,
+      points: updatedOwner.points,
     });
   }
+}
 
   await uq.save();
 
-  if (!uq._id) throw new Error('_id missing');
-
+  // 7️⃣ Sockets (simples, sans typage fragile)
   socketService.emitQuestValidated({
-    userQuestId: uq._id.toString(),
+    userQuestId: uq.id,
     validationCount: uq.validationCount,
     status: uq.status,
     validatedBy: userId,
-    successfulQuests: updatedUser?.successfulQuests
   });
+
+  if (dailyCount + 1 === 10) {
+    socketService.emitPointsUpdated({
+      userId,
+      points: user.points + 1,
+    });
+  }
 
   return uq;
 };
 
+export const getRandomSubmittedQuest = async (userId: string) => {
+  return UserQuestModel.findOne({
+    status: 'submitted',
+    user: { $ne: userId },
+  }).sort({ updatedAt: -1 }); 
+};
