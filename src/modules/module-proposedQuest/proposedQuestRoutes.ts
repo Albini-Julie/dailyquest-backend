@@ -15,7 +15,7 @@ const router = Router();
 // proposer une quête (user)
 router.post('/', authMiddleware, proposeQuest);
 
-// voir SES quêtes proposées (user)
+// voir ses quêtes proposées (user)
 router.get('/me', authMiddleware, getMyProposedQuests);
 
 // voir les quêtes en attente (admin)

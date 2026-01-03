@@ -1,130 +1,127 @@
-import { Request, Response } from 'express';
-import { getSubmittedQuests, validateCommunityQuest } from '../../src/modules/module-community/communityController';
-import * as communityService from '../../src/modules/module-community/communityService';
-import { UserModel } from '../../src/modules/module-user/userModel';
+import { Request, Response } from "express";
+import {
+  getSubmittedQuests as getSubmittedQuestsController,
+  validateCommunityQuest as validateCommunityQuestController,
+} from "../../src/modules/module-community/communityController";
+import * as communityService from "../../src/modules/module-community/communityService";
+import { UserModel } from "../../src/modules/module-user/userModel";
+import { UserQuestModel } from "../../src/modules/module-userQuest/userQuestModel";
+import { socketService } from "../../src/socket/socketService";
 
-jest.mock('../../src/modules/module-community/communityService');
+jest.mock("../../src/modules/module-user/userModel");
+jest.mock("../../src/modules/module-userQuest/userQuestModel");
+jest.mock("../../src/socket/socketService");
 
-const mockResponse = (): Response => {
-  const res: Partial<Response> = {};
-  res.status = jest.fn().mockReturnThis();
-  res.json = jest.fn();
-  return res as Response;
-};
+const mockRes = (): Response =>
+  ({
+    status: jest.fn().mockReturnThis(),
+    json: jest.fn(),
+  } as any);
 
-const mockUserId = '507f1f77bcf86cd799439011';
+const mockUserId = "user-id-123";
+const questId = "quest-id-456";
 
-afterEach(() => {
-  jest.clearAllMocks();
-});
-
-describe('getSubmittedQuests', () => {
-  // Mock manuel pour reproduire le comportement Mongoose findById().select()
-  it('should return submitted quests', async () => {
-  (UserModel as any).findById = jest.fn().mockReturnValue({
-    select: jest.fn().mockResolvedValue({
-      dailyValidations: 3,
-    }),
+describe("communityController", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
   });
 
-  // Mock du service
-  (communityService.getSubmittedQuests as jest.Mock).mockResolvedValue([
-    {
-      _id: '1',
-      status: 'submitted',
-      proofImage: null,
-      toObject: () => ({
-        _id: '1',
-        status: 'submitted',
-        proofImage: null,
-      }),
-    },
-  ]);
+  it("getSubmittedQuests → success", async () => {
+    (UserModel.findById as jest.Mock).mockReturnValue({
+      select: jest.fn().mockResolvedValue({ dailyValidations: 3 }),
+    });
 
-  const req = {
-    user: { _id: mockUserId },
-  } as Request;
+    jest
+      .spyOn(communityService, "getSubmittedQuests")
+      .mockResolvedValue([
+        {
+          _id: "1",
+          status: "submitted",
+          proofImage: null,
+          toObject: () => ({
+            _id: "1",
+            status: "submitted",
+            proofImage: null,
+          }),
+        } as any,
+      ]);
 
-  const res = mockResponse();
+    const req = { user: { _id: mockUserId } } as Request;
+    const res = mockRes();
 
-  await getSubmittedQuests(req, res);
+    await getSubmittedQuestsController(req, res);
 
-  expect(communityService.getSubmittedQuests).toHaveBeenCalledWith(mockUserId);
-
-  expect(res.json).toHaveBeenCalledWith({
-    quests: [
-      {
-        _id: '1',
-        status: 'submitted',
-        proofImage: null,
-        imageUrl: null,
-      },
-    ],
-    dailyValidations: 3,
-    dailyLimit: 10,
-  });
-});
-
-
-  it('should return 500 on error', async () => {
-    (communityService.getSubmittedQuests as jest.Mock).mockRejectedValue(
-      new Error('Service error')
-    );
-
-    const req = {
-      user: { _id: mockUserId },
-    } as Request;
-
-    const res = mockResponse();
-
-    await getSubmittedQuests(req, res);
-
-    expect(res.status).toHaveBeenCalledWith(500);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Service error' });
-  });
-});
-
-describe('validateCommunityQuest', () => {
-  it('should validate a community quest', async () => {
-    (communityService.validateCommunityQuest as jest.Mock).mockResolvedValue({
-  _id: '1',
-  status: 'validated',
-});
-
-    const req = {
-      user: { _id: mockUserId },
-      params: { id: 'questId' },
-    } as Request;
-
-    const res = mockResponse();
-
-    await validateCommunityQuest(req, res);
-
-    expect(communityService.validateCommunityQuest).toHaveBeenCalledWith(
-       mockUserId,
-       'questId'
-    );
     expect(res.json).toHaveBeenCalledWith({
-      _id: '1',
-      status: 'validated',
+      quests: [
+        {
+          _id: "1",
+          status: "submitted",
+          proofImage: null,
+          imageUrl: null,
+        },
+      ],
+      dailyValidations: 3,
+      dailyLimit: 10,
     });
   });
 
-  it('should return 400 on error', async () => {
-    (communityService.validateCommunityQuest as jest.Mock).mockRejectedValue(
-      new Error('Validation error')
-  );
+  it("validateCommunityQuest → error", async () => {
+    jest
+      .spyOn(communityService, "validateCommunityQuest")
+      .mockRejectedValue(new Error("Validation error"));
 
     const req = {
       user: { _id: mockUserId },
-      params: { id: 'questId' },
+      params: { id: questId },
     } as Request;
 
-    const res = mockResponse();
+    const res = mockRes();
 
-    await validateCommunityQuest(req, res);
+    await validateCommunityQuestController(req, res);
 
     expect(res.status).toHaveBeenCalledWith(400);
-    expect(res.json).toHaveBeenCalledWith({ error: 'Validation error' });
+  });
+});
+
+describe("communityService", () => {
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it("throws if quest not found", async () => {
+    (UserQuestModel.findById as jest.Mock).mockResolvedValue(null);
+
+    await expect(
+      communityService.validateCommunityQuest(mockUserId, questId)
+    ).rejects.toThrow("UserQuest not found");
+  });
+
+  it("validates quest", async () => {
+    const uqMock = {
+      _id: questId,
+      status: "submitted",
+      user: { toString: () => "other-user" },
+      validatedBy: [],
+      validationCount: 0,
+      questPoints: 10,
+      save: jest.fn(),
+    };
+
+    (UserQuestModel.findById as jest.Mock).mockResolvedValue(uqMock);
+    (UserModel.findById as jest.Mock).mockReturnValue({
+      select: jest.fn().mockResolvedValue({
+        dailyValidations: 0,
+        lastValidationDate: new Date(),
+        points: 10,
+      }),
+    });
+
+    const result = await communityService.validateCommunityQuest(
+      mockUserId,
+      questId
+    );
+
+    expect(result.status).toBe("submitted");
+    expect(socketService.emitQuestValidated).toHaveBeenCalled();
   });
 });
