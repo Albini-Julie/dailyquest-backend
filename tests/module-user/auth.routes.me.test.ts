@@ -11,7 +11,6 @@ describe("authRoutes – GET /me edge cases", () => {
   let app: express.Express;
 
   beforeEach(() => {
-    // ✅ IMPORTANT : le middleware laisse passer par défaut
     (authMiddleware as jest.Mock).mockImplementation(
       (_req: any, _res: any, next: any) => next()
     );

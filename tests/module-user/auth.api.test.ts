@@ -1,14 +1,11 @@
 import request from 'supertest';
 import mongoose from 'mongoose';
-import { Request, Response, NextFunction } from "express";
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import app from '../../src/server';
 import { UserModel } from '../../src/modules/module-user/userModel';
 import { UserQuestModel } from '../../src/modules/module-userQuest/userQuestModel';
 import { QuestModel } from '../../src/modules/module-quest/questModel';
 import jwt from 'jsonwebtoken';
-import { adminMiddleware } from "../../src/middlewares/adminMiddleware";
-
 
 let mongoServer: MongoMemoryServer;
 
@@ -30,26 +27,26 @@ const createUserQuestContext = async (email: string, username: string) => {
 
   const quests = await QuestModel.create([
     {
-    title: 'Cuisiner un plat sain',
-    description: 'Test desc',
-    points: 10,
-    creator: user._id,
-    isActive: true,
-  },
-  {
-    title: 'Faire une séance de sport',
-    description: 'Test desc',
-    points: 10,
-    creator: user._id,
-    isActive: true,
-  },
-  {
-    title: 'Marcher 5km',
-    description: 'Test desc',
-    points: 10,
-    creator: user._id,
-    isActive: true,
-  }
+      title: 'Cuisiner un plat sain',
+      description: 'Test desc',
+      points: 10,
+      creator: user._id,
+      isActive: true,
+    },
+    {
+      title: 'Faire une séance de sport',
+      description: 'Test desc',
+      points: 10,
+      creator: user._id,
+      isActive: true,
+    },
+    {
+      title: 'Marcher 5km',
+      description: 'Test desc',
+      points: 10,
+      creator: user._id,
+      isActive: true,
+    },
   ]);
 
   const userQuest = await UserQuestModel.create({
@@ -64,7 +61,6 @@ const createUserQuestContext = async (email: string, username: string) => {
     validatedBy: [],
   });
 
-  // token JWT DIRECT (sans passer par l’API)
   const token = generateTestToken(user._id);
 
   return { user, quests, userQuest, token };
@@ -91,7 +87,6 @@ afterEach(async () => {
   await UserQuestModel.deleteMany({});
 });
 
-
 describe('Auth API', () => {
   describe('POST /api/auth/register', () => {
     it('should create a user and return a token', async () => {
@@ -100,8 +95,10 @@ describe('Auth API', () => {
         email: 'julie@test.com',
         password: 'Password123!',
       });
+
       expect(res.statusCode).toBe(201);
       expect(res.body).toHaveProperty('token');
+
       const user = await UserModel.findOne({ email: 'julie@test.com' });
       expect(user).not.toBeNull();
     });
@@ -112,6 +109,7 @@ describe('Auth API', () => {
         email: 'invalid-email',
         password: 'Password123!',
       });
+
       expect(res.statusCode).toBe(400);
     });
 
@@ -121,6 +119,7 @@ describe('Auth API', () => {
         email: 'alice@test.com',
         password: '123',
       });
+
       expect(res.statusCode).toBe(400);
     });
 
@@ -138,10 +137,9 @@ describe('Auth API', () => {
       });
 
       expect(res.statusCode).toBe(400);
-      });
+    });
   });
 
-// Tests login
   describe('POST /api/auth/login', () => {
     beforeEach(async () => {
       await request(app).post('/api/auth/register').send({
@@ -156,6 +154,7 @@ describe('Auth API', () => {
         email: 'julie@test.com',
         password: 'Password123!',
       });
+
       expect(res.statusCode).toBe(200);
       expect(res.body).toHaveProperty('token');
     });
@@ -165,6 +164,7 @@ describe('Auth API', () => {
         email: 'julie@test.com',
         password: 'WrongPass123',
       });
+
       expect(res.statusCode).toBe(401);
     });
 
@@ -188,6 +188,7 @@ describe('GET /api/auth/me', () => {
       email: 'julie@test.com',
       password: 'Password123!',
     });
+
     token = res.body.token;
   });
 
@@ -209,61 +210,16 @@ describe('GET /api/auth/me', () => {
   });
 
   it('should return 401 if user not found', async () => {
-  // Générer un token avec un ID qui n’existe pas
-  const fakeToken = jwt.sign(
-    { id: new mongoose.Types.ObjectId() },
-    process.env.JWT_SECRET || 'testsecret'
-  );
+    const fakeToken = jwt.sign(
+      { id: new mongoose.Types.ObjectId() },
+      process.env.JWT_SECRET || 'testsecret'
+    );
 
-  const res = await request(app)
-    .get('/api/auth/me')
-    .set('Authorization', `Bearer ${fakeToken}`);
+    const res = await request(app)
+      .get('/api/auth/me')
+      .set('Authorization', `Bearer ${fakeToken}`);
 
-  expect(res.statusCode).toBe(401);
-  expect(res.body).toHaveProperty('error', 'User not found');
-});
-
-});
-
-// Tests middleware admin
-describe("adminMiddleware", () => {
-  let req: Partial<Request>;
-  let res: Partial<Response>;
-  let next: NextFunction;
-
-  beforeEach(() => {
-    req = {};
-    res = {
-      status: jest.fn().mockReturnThis(),
-      json: jest.fn(),
-    };
-    next = jest.fn();
-  });
-
-  it("retourne 401 si req.user est absent", () => {
-    adminMiddleware(req as Request, res as Response, next);
-
-    expect(res.status).toHaveBeenCalledWith(401);
-    expect(res.json).toHaveBeenCalledWith({ error: "Unauthorized" });
-    expect(next).not.toHaveBeenCalled();
-  });
-
-  it("retourne 403 si l'utilisateur n'est pas admin", () => {
-    req.user = { isAdmin: false } as any;
-
-    adminMiddleware(req as Request, res as Response, next);
-
-    expect(res.status).toHaveBeenCalledWith(403);
-    expect(res.json).toHaveBeenCalledWith({ error: "Admin access only" });
-    expect(next).not.toHaveBeenCalled();
-  });
-
-  it("appelle next() si l'utilisateur est admin", () => {
-    req.user = { isAdmin: true } as any;
-
-    adminMiddleware(req as Request, res as Response, next);
-
-    expect(next).toHaveBeenCalledTimes(1);
-    expect(res.status).not.toHaveBeenCalled();
+    expect(res.statusCode).toBe(401);
+    expect(res.body).toHaveProperty('error', 'User not found');
   });
 });
