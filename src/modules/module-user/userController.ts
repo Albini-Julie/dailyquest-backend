@@ -4,7 +4,7 @@ import { UserModel } from './userModel';
 export const getStats = async (req: any, res: Response) => {
   try {
     const user = await UserModel.findById(req.user.id).select(
-      'points successfulQuests failedQuests username'
+      'points successfulQuests failedQuests username isAdmin'
     );
 
     if (!user) {
