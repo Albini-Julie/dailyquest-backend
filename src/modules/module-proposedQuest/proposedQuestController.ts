@@ -21,3 +21,19 @@ export const proposeQuest = async (req: Request, res: Response) => {
     res.status(500).json({ error: err.message });
   }
 };
+
+export const getMyProposedQuests = async (req: Request, res: Response) => {
+  try {
+    if (!req.user) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const quests = await ProposedQuestModel.find({
+      author: req.user._id,
+    }).sort({ createdAt: -1 });
+
+    res.json(quests);
+  } catch (err: any) {
+    res.status(500).json({ error: err.message });
+  }
+};
