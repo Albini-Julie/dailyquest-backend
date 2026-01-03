@@ -13,6 +13,13 @@ interface PointsUpdatedPayload {
   points: number;
 }
 
+interface ProposedQuestReviewedPayload {
+  questId: string;
+  title: string;
+  authorId: string;
+  status: 'approved' | 'rejected';
+}
+
 class SocketService {
   emitQuestValidated(payload: QuestValidatedPayload) {
     try {
@@ -27,6 +34,17 @@ class SocketService {
       getIO().emit('pointsUpdated', payload);
     } catch (err) {
       console.error('SocketService: impossible d’émettre pointsUpdated', err);
+    }
+  }
+
+  emitProposedQuestReviewed(payload: ProposedQuestReviewedPayload) {
+    try {
+      getIO().emit('proposedQuestReviewed', payload);
+    } catch (err) {
+      console.error(
+        'SocketService: impossible d’émettre proposedQuestReviewed',
+        err
+      );
     }
   }
 }

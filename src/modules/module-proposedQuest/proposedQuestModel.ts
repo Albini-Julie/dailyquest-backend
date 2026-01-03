@@ -10,6 +10,7 @@ export interface IProposedQuest extends Document {
   status: ProposedQuestStatus;
   createdAt: Date;
   updatedAt: Date;
+  reviewedAt: Date;
 }
 
 const proposedQuestSchema = new Schema<IProposedQuest>(
@@ -36,8 +37,22 @@ const proposedQuestSchema = new Schema<IProposedQuest>(
       enum: ['pending', 'approved', 'rejected'],
       default: 'pending',
     },
+    reviewedAt: {
+      type: Date,
+      default: null,
+    },
   },
   { timestamps: true }
+);
+
+proposedQuestSchema.index(
+  { reviewedAt: 1 },
+  {
+    expireAfterSeconds: 60 * 60 * 24 * 7,
+    partialFilterExpression: {
+      status: { $in: ['approved', 'rejected'] },
+    },
+  }
 );
 
 export const ProposedQuestModel = model<IProposedQuest>(
