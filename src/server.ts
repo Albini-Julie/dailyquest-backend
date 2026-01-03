@@ -11,6 +11,7 @@ import userQuestRoutes from './modules/module-userQuest/userQuestRoutes';
 import communityRoutes from './modules/module-community/communityRoutes';
 import questsRoutes from './modules/module-quest/questRoutes';
 import userRoutes from './modules/module-user/userRoutes';
+import proposedQuestRoutes from './modules/module-proposedQuest/proposedQuestRoutes';
 
 dotenv.config();
 
@@ -29,6 +30,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/userquests', userQuestRoutes);
 app.use('/api/community', communityRoutes);
 app.use('/api/quests', questsRoutes);
+app.use('/api/proposed-quests', proposedQuestRoutes);
 
 // Connexion Mongo et lancement serveur
 if (process.env.NODE_ENV !== 'test') {
