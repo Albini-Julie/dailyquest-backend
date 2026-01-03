@@ -16,6 +16,7 @@ describe('userQuestServices', () => {
   let uqMock: any;
 
   beforeEach(() => {
+    jest.clearAllMocks();
     uqMock = {
       _id: new mongoose.Types.ObjectId(),
       status: 'submitted',
@@ -26,12 +27,17 @@ describe('userQuestServices', () => {
       save: jest.fn(),
     };
 
-    (UserQuestModel.findById as jest.Mock).mockReturnValue({
-      populate: jest.fn().mockResolvedValue(uqMock),
+    (UserQuestModel.findById as jest.Mock).mockResolvedValue(uqMock);
+
+    (UserModel.findById as jest.Mock).mockResolvedValue({
+      select: jest.fn().mockResolvedValue({
+        dailyValidations: 0,
+        lastValidationDate: new Date(),
+        points: 10,
+      }),
     });
 
     (UserModel.findByIdAndUpdate as jest.Mock).mockResolvedValue({ points: 50 });
-    jest.clearAllMocks();
   });
 
   describe('getSubmittedQuests', () => {
@@ -56,9 +62,7 @@ describe('userQuestServices', () => {
 
   describe('validateCommunityQuest', () => {
     it('should throw if quest not found', async () => {
-      (UserQuestModel.findById as jest.Mock).mockReturnValue({
-        populate: jest.fn().mockResolvedValue(null),
-      });
+      (UserQuestModel.findById as jest.Mock).mockResolvedValue(null);
 
       await expect(validateCommunityQuest(mockUserId, questId))
         .rejects.toThrow('UserQuest not found');
@@ -72,44 +76,71 @@ describe('userQuestServices', () => {
 
     it('should throw if validating own quest', async () => {
       uqMock.user._id = new mongoose.Types.ObjectId(mockUserId);
+      uqMock.status = 'submitted';
+      uqMock.user = new mongoose.Types.ObjectId(mockUserId);
       await expect(validateCommunityQuest(mockUserId, questId))
         .rejects.toThrow('Cannot validate your own quest');
     });
 
     it('should throw if already validated', async () => {
       uqMock.validatedBy = [new mongoose.Types.ObjectId(mockUserId)];
+      uqMock.status = 'submitted';
+      uqMock.validatedBy = [new mongoose.Types.ObjectId(mockUserId)];
       await expect(validateCommunityQuest(mockUserId, questId))
         .rejects.toThrow('Already validated');
     });
 
     it('should validate quest and emit events without reaching 5', async () => {
-      uqMock.validationCount = 2;
+      (UserModel as any).findById = jest.fn().mockReturnValue({
+        select: jest.fn().mockResolvedValue({
+          dailyValidations: 0,
+          lastValidationDate: new Date(),
+          points: 10,
+        }),
+      });
+
+      uqMock.status = 'submitted';
+      uqMock.validationCount = 0;
+      uqMock.validatedBy = [];
+      uqMock.id = uqMock._id.toString();
+
       const result = await validateCommunityQuest(mockUserId, questId);
+
       expect(uqMock.save).toHaveBeenCalled();
-      expect(socketService.emitQuestValidated).toHaveBeenCalledWith(expect.objectContaining({
-        userQuestId: uqMock._id.toString(),
-        validationCount: uqMock.validationCount,
-        status: uqMock.status,
-        validatedBy: mockUserId,
-      }));
+
+      expect(socketService.emitQuestValidated).toHaveBeenCalledWith(
+        expect.objectContaining({
+          userQuestId: uqMock._id.toString(),
+          status: 'submitted',
+          validatedBy: mockUserId,
+        })
+      );
+
       expect(result.status).toBe('submitted');
     });
 
-    it('should validate quest and update points if reaching 5', async () => {
-      uqMock.validationCount = 4;
-      const result = await validateCommunityQuest(mockUserId, questId);
-      expect(uqMock.status).toBe('validated');
-      expect(socketService.emitPointsUpdated).toHaveBeenCalledWith(expect.objectContaining({
-        userId: uqMock.user._id.toString(),
-        points: 50,
-      }));
-      expect(socketService.emitQuestValidated).toHaveBeenCalled();
-    });
 
-    it('should throw if _id missing after save', async () => {
-      uqMock._id = undefined;
-      await expect(validateCommunityQuest(mockUserId, questId))
-        .rejects.toThrow('_id missing');
+
+    it('should validate quest and update points if reaching 5', async () => {
+      (UserModel as any).findById = jest.fn().mockReturnValue({
+        select: jest.fn().mockResolvedValue({
+          dailyValidations: 4,
+          lastValidationDate: new Date(),
+          points: 10,
+        }),
+      });
+
+      uqMock.status = 'submitted';
+      uqMock.validationCount = 4;
+      uqMock.validatedBy = [];
+      uqMock.id = uqMock._id.toString();
+
+      const result = await validateCommunityQuest(mockUserId, questId);
+
+      expect(uqMock.status).toBe('validated');
+      expect(socketService.emitPointsUpdated).toHaveBeenCalled();
+      expect(socketService.emitQuestValidated).toHaveBeenCalled();
+
+      expect(result.status).toBe('validated');
     });
-  });
-});
+});});

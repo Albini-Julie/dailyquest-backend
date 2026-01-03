@@ -100,11 +100,11 @@ describe('UserQuests API - Submit Quest', () => {
       .set('Authorization', `Bearer ${token1}`);
 
     expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
+    expect(Array.isArray(res.body.quests)).toBe(true);
     // La quête de user2 doit être présente
-    expect(res.body.find((q: any) => q._id === uq2._id.toString())).toBeDefined();
+    expect(res.body.quests.find((q: any) => q._id === uq2._id.toString())).toBeDefined();
     // La quête de user1 (lui-même) ne doit pas apparaître
-    expect(res.body.find((q: any) => q._id === uq1._id.toString())).toBeUndefined();
+    expect(res.body.quests.find((q: any) => q._id === uq1._id.toString())).toBeUndefined();
   });
 
   it('PUT /userquests/submit/:id - should fail with 403 if quest belongs to another user', async () => {
@@ -180,8 +180,8 @@ describe('UserQuests API - Submit Quest', () => {
       .set('Authorization', `Bearer ${token}`);
 
     expect(res.statusCode).toBe(200);
-    expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body.length).toBe(0);
+    expect(Array.isArray(res.body.quests)).toBe(true);
+    expect(res.body.quests.length).toBe(0);
   });
 
   it('submitProof - should set proofImage and endDate', async () => {
